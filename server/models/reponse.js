@@ -3,13 +3,10 @@ const Schema = mongoose.Schema;
 
 const reponseSchema = new Schema({
     nom: String,
-    prenom: String,
     genre: String,
     age: Number,
     etat: String,
     emploi: String,
-    enfantcharge: Number,
-    autrecharge: Number,
     object1: Number,
     object2: Number,
     object3: Number,
@@ -24,6 +21,7 @@ const reponseSchema = new Schema({
     renseignement3: Number,
     minrendement: String,
     maxpert: String,
+    created:{type: Date, default:Date.now}
 });
 
 module.exports = mongoose.model('reponse', reponseSchema);
