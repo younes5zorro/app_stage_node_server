@@ -19,8 +19,8 @@ const reponseSchema = new Schema({
     renseignement2: Array,
     renseignement22: Number,
     renseignement3: Number,
-    minrendement: String,
-    maxpert: String,
+    minrendement: Number,
+    maxpert: Number,
     created:{type: Date, default:Date.now}
 });
 
