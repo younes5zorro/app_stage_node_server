@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose'); 
 const reponse = require('../models/reponse');
+const row = require('../models/row');
+const moment = require('moment');
 
 const db = "mongodb://qstuser:data123@ds247171.mlab.com:47171/qstapp";
-
+mongodb://<dbuser>:<dbpassword>@ds247171.mlab.com:47171/qstapp
 
 mongoose.Promise = global.Promise;
 mongoose.connect(db, function(err) {
@@ -29,6 +31,7 @@ router.get('/all', function(req, res) {
             }
         });
 });
+
 router.get('/reponse/:id', function(req, res) {
     console.log('Requesting a specific reponse');
     reponse.findById(req.params.id)
@@ -40,6 +43,53 @@ router.get('/reponse/:id', function(req, res) {
             }
         });
 });
+
+
+router.get('/dash', function(req, res) {
+    console.log('Requesting for dashboard');
+    // row.aggregate([{
+    //     // $sort:{'$seance':1},
+    //     $group: {
+    //         _id: {'$dateToString':{'format':'%Y-%m-%dT00:00:00.000Z','date':'$seance'}},
+    //         'first' : { '$first' : '$dernier cours'},
+    //         'last' : { '$last' : '$dernier cours'} ,
+    //         'min' : { '$min' : '$dernier cours' },
+    //         'max' : { '$max' : '$dernier cours' },
+    //         'count' : { '$sum': 1 },
+    //         'sum' : { '$sum' : '$dernier cours' }
+    //     },
+    row.find({}).exec(function(err, row) {
+            if (err) {
+                console.log('Error getting the rows');
+            } else {
+                var from = null;
+                var to = null;
+                var chartValues = [];
+                var count = 0;
+
+                row.forEach(function(item) {
+                    
+                    var phptime= (new Date(item.seance)).getTime()/1000;
+                    chartValues.push([phptime,item.dernierCours]) ;
+                    if (from === null) from = phptime;
+                    to = phptime + 1;
+                    count++;
+                    
+                });
+
+                var chartResult = {
+                    'from' : from,
+                    'to' : to,
+                    'unit' : 'd',
+                    'values' : chartValues
+                };
+
+                console.log(chartResult);
+                res.json(chartResult);
+            }
+        });
+});
+
 
 router.post('/create', function(req, res) {
     console.log('Posting an Reponse');
