@@ -3,10 +3,10 @@ const router = express.Router();
 const mongoose = require('mongoose'); 
 const reponse = require('../models/reponse');
 const row = require('../models/row');
-const moment = require('moment');
+const PythonShell = require('python-shell');
 
 const db = "mongodb://qstuser:data123@ds247171.mlab.com:47171/qstapp";
-mongodb://<dbuser>:<dbpassword>@ds247171.mlab.com:47171/qstapp
+// mongodb://<dbuser>:<dbpassword>@ds247171.mlab.com:47171/qstapp
 
 mongoose.Promise = global.Promise;
 mongoose.connect(db, function(err) {
@@ -31,6 +31,19 @@ router.get('/all', function(req, res) {
             }
         });
 });
+router.get('/actions', function(req, res) {
+
+    // row.find({}, { designation: 1, slug: 1,_id:0 }).distinct('designation')
+    row.aggregate([{"$group": { "_id": { designation: "$designation", slug: "$slug" } } }])
+        .exec(function(err, reponses) {
+            if (err) {
+                console.log('Error getting the reponses');
+            } else {
+                console.log(reponses);
+                res.json(reponses);
+            }
+        });
+});
 
 router.get('/reponse/:id', function(req, res) {
     console.log('Requesting a specific reponse');
@@ -44,8 +57,21 @@ router.get('/reponse/:id', function(req, res) {
         });
 });
 
+router.get('/test/:nb', function(req, res) {
 
-router.get('/dash', function(req, res) {
+    var options = {
+        mode:'json',
+        args:[ req.params.nb ]
+      }
+      PythonShell.run('./server/test/test.py', options, function (err, data) {
+        if (err) throw err;
+        res.json(data);
+        // res.send(data.toString())
+      });
+});
+
+
+router.get('/dash/:slug', function(req, res) {
     console.log('Requesting for dashboard');
     // row.aggregate([{
     //     // $sort:{'$seance':1},
@@ -58,23 +84,20 @@ router.get('/dash', function(req, res) {
     //         'count' : { '$sum': 1 },
     //         'sum' : { '$sum' : '$dernier cours' }
     //     },
-    row.find({}).exec(function(err, row) {
+    row.find({'slug': req.params.slug}).sort({'seance':1}).exec(function(err, row) {
             if (err) {
                 console.log('Error getting the rows');
             } else {
                 var from = null;
-                var to = null;
+                var to = 0;
                 var chartValues = [];
-                var count = 0;
 
                 row.forEach(function(item) {
                     
                     var phptime= (new Date(item.seance)).getTime()/1000;
                     chartValues.push([phptime,item.dernierCours]) ;
-                    if (from === null) from = phptime;
-                    to = phptime + 1;
-                    count++;
-                    
+                    if (from === null || from > phptime) {from = phptime;}
+                    if (to < phptime) {to = phptime +1}
                 });
 
                 var chartResult = {
