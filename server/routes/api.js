@@ -71,20 +71,52 @@ router.get('/test/:nb', function(req, res) {
 });
 
 
-router.get('/dash/:slug', function(req, res) {
+// router.get('/dash/:slug', function(req, res) {
+//     console.log('Requesting for dashboard');
+//     row.find({'slug': req.params.slug}).sort({'seance':1}).exec(function(err, row) {
+//             if (err) {
+//                 console.log('Error getting the rows');
+//             } else {
+//                 var from = null;
+//                 var to = 0;
+//                 var chartValues = [];
+
+//                 row.forEach(function(item) {
+                    
+//                     var phptime= (new Date(item.seance)).getTime()/1000;
+//                     chartValues.push([phptime,item.dernierCours]) ;
+//                     if (from === null || from > phptime) {from = phptime;}
+//                     if (to < phptime) {to = phptime +1}
+//                 });
+
+//                 var chartResult = {
+//                     'from' : from,
+//                     'to' : to,
+//                     'unit' : 'd',
+//                     'values' : chartValues
+//                 };
+
+//                 console.log(chartResult);
+//                 res.json(chartResult);
+//             }
+//         });
+// });
+
+router.get('/masi/:slug', function(req, res) {
     console.log('Requesting for dashboard');
-    // row.aggregate([{
-    //     // $sort:{'$seance':1},
-    //     $group: {
-    //         _id: {'$dateToString':{'format':'%Y-%m-%dT00:00:00.000Z','date':'$seance'}},
-    //         'first' : { '$first' : '$dernier cours'},
-    //         'last' : { '$last' : '$dernier cours'} ,
-    //         'min' : { '$min' : '$dernier cours' },
-    //         'max' : { '$max' : '$dernier cours' },
-    //         'count' : { '$sum': 1 },
-    //         'sum' : { '$sum' : '$dernier cours' }
-    //     },
-    row.find({'slug': req.params.slug}).sort({'seance':1}).exec(function(err, row) {
+    row.aggregate([
+             
+                { $match:{'slug': req.params.slug}},
+                { $lookup:{
+                    from: "masi",
+                    localField: "seance",
+                    foreignField: "seance",
+                    as: "masi_docs"
+                }},
+                { $sort:{'seance':1}},
+     ])
+   .exec(function(err, row) {
+//    .sort({'seance':1}).exec(function(err, row) {
             if (err) {
                 console.log('Error getting the rows');
             } else {
@@ -93,9 +125,9 @@ router.get('/dash/:slug', function(req, res) {
                 var chartValues = [];
 
                 row.forEach(function(item) {
-                    
+
                     var phptime= (new Date(item.seance)).getTime()/1000;
-                    chartValues.push([phptime,item.dernierCours]) ;
+                    chartValues.push([phptime,item.dernierCours,item.masi_docs[0].valeur]) ;
                     if (from === null || from > phptime) {from = phptime;}
                     if (to < phptime) {to = phptime +1}
                 });
