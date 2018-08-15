@@ -5,7 +5,7 @@ const reponse = require('../models/reponse');
 const row = require('../models/row');
 const PythonShell = require('python-shell');
 
-const db = "mongodb://qstuser:data123@ds247171.mlab.com:47171/qstapp";
+const db = "mongodb://admin:bigdata5@ds247171.mlab.com:47171/qstapp";
 // mongodb://<dbuser>:<dbpassword>@ds247171.mlab.com:47171/qstapp
 
 mongoose.Promise = global.Promise;
@@ -57,7 +57,7 @@ router.get('/reponse/:id', function(req, res) {
         });
 });
 
-router.get('/test/:nb', function(req, res) {
+router.get('/py/:nb', function(req, res) {
 
     var options = {
         mode:'json',
@@ -70,53 +70,38 @@ router.get('/test/:nb', function(req, res) {
       });
 });
 
+function base100(values) {
 
-// router.get('/dash/:slug', function(req, res) {
-//     console.log('Requesting for dashboard');
-//     row.find({'slug': req.params.slug}).sort({'seance':1}).exec(function(err, row) {
-//             if (err) {
-//                 console.log('Error getting the rows');
-//             } else {
-//                 var from = null;
-//                 var to = 0;
-//                 var chartValues = [];
+    values =  values.filter((value, index, array) => !array.filter((v, i) => JSON.stringify(value) == JSON.stringify(v) && i < index).length);
+    
+    base = [values[0][0],values[0][1],values[0][2],100,100] 
 
-//                 row.forEach(function(item) {
-                    
-//                     var phptime= (new Date(item.seance)).getTime()/1000;
-//                     chartValues.push([phptime,item.dernierCours]) ;
-//                     if (from === null || from > phptime) {from = phptime;}
-//                     if (to < phptime) {to = phptime +1}
-//                 });
+    result = [base]
+    values.forEach((item, index) => {
+        if(index != 0){
+            result.push([item[0],item[1],item[2],(item[1]/base[1])*100,(item[2]/base[2])*100]) ;
+            // result.push([item[0],item[1],item[2],(item[1]/values[index-1][1])*100,(item[2]/values[index-1][2])*100]) ;
+        }
+    });
 
-//                 var chartResult = {
-//                     'from' : from,
-//                     'to' : to,
-//                     'unit' : 'd',
-//                     'values' : chartValues
-//                 };
-
-//                 console.log(chartResult);
-//                 res.json(chartResult);
-//             }
-//         });
-// });
+    return result
+    
+}
 
 router.get('/masi/:slug', function(req, res) {
     console.log('Requesting for dashboard');
     row.aggregate([
              
-                { $match:{'slug': req.params.slug}},
-                { $lookup:{
-                    from: "masi",
-                    localField: "seance",
-                    foreignField: "seance",
-                    as: "masi_docs"
-                }},
-                { $sort:{'seance':1}},
+        { $match:{'slug': req.params.slug}},
+        { $lookup:{
+            from: "masi",
+            localField: "seance",
+            foreignField: "seance",
+            as: "masi_docs"
+        }},
+        { $sort:{'seance':1}},
      ])
    .exec(function(err, row) {
-//    .sort({'seance':1}).exec(function(err, row) {
             if (err) {
                 console.log('Error getting the rows');
             } else {
@@ -130,13 +115,18 @@ router.get('/masi/:slug', function(req, res) {
                     chartValues.push([phptime,item.dernierCours,item.masi_docs[0].valeur]) ;
                     if (from === null || from > phptime) {from = phptime;}
                     if (to < phptime) {to = phptime +1}
+                    
                 });
+
+                chartValues = base100(chartValues);
 
                 var chartResult = {
                     'from' : from,
                     'to' : to,
                     'unit' : 'd',
                     'values' : chartValues
+               
+                    // 'values' : chartValues
                 };
 
                 console.log(chartResult);
@@ -144,6 +134,47 @@ router.get('/masi/:slug', function(req, res) {
             }
         });
 });
+
+
+router.get('/test/:slug', function(req, res) {
+    row.aggregate([
+             
+        { $match:{'slug': req.params.slug}},
+        { $lookup:{
+            from: "masi",
+            localField: "seance",
+            foreignField: "seance",
+            as: "masi_docs"
+        }},
+        { $sort:{'seance':-1}},
+     ])
+   .exec(function(err, row) {
+            if (err) {
+                console.log('Error getting the rows');
+            } else {
+                var from = null;
+                var to = 0;
+                var chartValues = [];
+
+                row.forEach(function(item) {
+
+                    var phptime= (new Date(item.seance)).getTime()/1000;
+                    chartValues.push([phptime,item.dernierCours,item.masi_docs[0].valeur]) ;
+                    if (from === null || from > phptime) {from = phptime;}
+                    if (to < phptime) {to = phptime +1}
+                    
+                });
+
+                chartValues = base100(chartValues);
+
+
+                console.log(chartValues);
+                res.json(chartValues);
+            }
+        });
+});
+
+
 
 
 router.post('/create', function(req, res) {
