@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose'); 
 const reponse = require('../models/reponse');
 const row = require('../models/row');
+const tweet = require('../models/tweet');
 const PythonShell = require('python-shell');
 
 const db = "mongodb://admin:bigdata5@ds247171.mlab.com:47171/qstapp";
@@ -53,6 +54,18 @@ router.get('/reponse/:id', function(req, res) {
                 console.log('Error getting the Reponse');
             } else {
                 res.json(reponse);
+            }
+        });
+});
+
+router.get('/tweets/:slug', function(req, res) {
+    console.log('Requesting a specific reponse');
+    tweet.find({'slug': req.params.slug})
+        .exec(function(err, tweets) {
+            if (err) {
+                console.log('Error getting the tweets');
+            } else {
+                res.json(tweets);
             }
         });
 });
@@ -136,42 +149,47 @@ router.get('/masi/:slug', function(req, res) {
 });
 
 
+router.get('/card/:slug', function(req, res) {
+    const values = [];
+    row.find({'slug': req.params.slug}).sort({"seance": -1}).limit(1)
+    .exec(function(err, row0) {
+             values.push({"recent":row0})
+             row.find({'slug': req.params.slug}).sort({"cap": -1}).limit(1)
+             .exec(function(err, row1) {
+                             values.push({"cap":row1})
+ 
+                             row.find({'slug': req.params.slug}).sort({"dernierCours": -1}).limit(1)
+                             .exec(function(err, row2) {
+                                          values.push({"cour":row2},{"result":{'cap':(row0[0].cap*100)/row1[0].cap,'cour':(row0[0].dernierCours*100)/row2[0].dernierCours}})
+                                          res.json(values);
+                                      }
+                                  );
+                         }
+                     );
+             }
+         );
+ });
+ 
+
 router.get('/test/:slug', function(req, res) {
-    row.aggregate([
-             
-        { $match:{'slug': req.params.slug}},
-        { $lookup:{
-            from: "masi",
-            localField: "seance",
-            foreignField: "seance",
-            as: "masi_docs"
-        }},
-        { $sort:{'seance':-1}},
-     ])
-   .exec(function(err, row) {
-            if (err) {
-                console.log('Error getting the rows');
-            } else {
-                var from = null;
-                var to = 0;
-                var chartValues = [];
+   const values = [];
+   row.find({'slug': req.params.slug}).sort({"seance": -1}).limit(1)
+   .exec(function(err, row0) {
+            values.push({"recent":row0})
+            row.find({'slug': req.params.slug}).sort({"cap": -1}).limit(1)
+            .exec(function(err, row1) {
+                            values.push({"cap":row1})
 
-                row.forEach(function(item) {
-
-                    var phptime= (new Date(item.seance)).getTime()/1000;
-                    chartValues.push([phptime,item.dernierCours,item.masi_docs[0].valeur]) ;
-                    if (from === null || from > phptime) {from = phptime;}
-                    if (to < phptime) {to = phptime +1}
-                    
-                });
-
-                chartValues = base100(chartValues);
-
-
-                console.log(chartValues);
-                res.json(chartValues);
+                            row.find({'slug': req.params.slug}).sort({"dernierCours": -1}).limit(1)
+                            .exec(function(err, row2) {
+                                         values.push({"cour":row2},{"result":{'cap':(row0[0].cap*100)/row1[0].cap,'cour':(row0[0].dernierCours*100)/row2[0].dernierCours}})
+                                         res.json(values);
+                                     }
+                                 );
+                        }
+                    );
             }
-        });
+        );
 });
 
 
