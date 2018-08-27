@@ -116,7 +116,8 @@ router.get('/masi/:slug', function(req, res) {
      ])
    .exec(function(err, row) {
             if (err) {
-                console.log('Error getting the rows');
+                console.log(err);
+                // console.log('Error getting the rows');
             } else {
                 var from = null;
                 var to = 0;
