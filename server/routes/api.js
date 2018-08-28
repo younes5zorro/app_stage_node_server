@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose'); 
 const reponse = require('../models/reponse');
 const row = require('../models/row');
+const rows2 = require('../models/row2');
 const tweet = require('../models/tweet');
 const PythonShell = require('python-shell');
 
@@ -169,6 +170,19 @@ router.get('/card/:slug', function(req, res) {
                      );
              }
          );
+ });
+ 
+
+
+router.get('/rows2/:slug', function(req, res) {
+    rows2.find({'slug': req.params.slug}).sort({"Date": -1}).limit(1)
+    .exec(function(err, row2) {
+        if (err) {
+            console.log(err);
+        } else {
+            res.json(row2);
+        }   
+    });
  });
  
 
