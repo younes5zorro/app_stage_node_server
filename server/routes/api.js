@@ -7,7 +7,8 @@ const rows2 = require('../models/row2');
 const tweet = require('../models/tweet');
 const PythonShell = require('python-shell');
 
-const db = "mongodb://admin:bigdata5@ds247171.mlab.com:47171/qstapp";
+const db = "mongodb://admin:roboadvisor07@ds237192.mlab.com:37192/robo_advisor";
+// const db = "mongodb://admin:bigdata5@ds247171.mlab.com:47171/qstapp";
 // mongodb://<dbuser>:<dbpassword>@ds247171.mlab.com:47171/qstapp
 
 mongoose.Promise = global.Promise;
@@ -46,7 +47,27 @@ router.get('/actions', function(req, res) {
             }
         });
 });
-
+router.get('/comp', function(req, res) {
+    const values = [];
+    const max = {}
+    // row.find({}, { designation: 1, slug: 1,_id:0 }).distinct('designation')
+    row.aggregate([{"$group": { "_id": "$designation","value":{$sum: "$dernierCours"} }}]).sort({"totale": -1}).limit(10)
+        .exec(function(err, result) {
+            if (err) {
+                console.log(err);
+            } else {
+                result.forEach(function(item) {
+                    
+                    values.push({"id":item._id,"value":item.value,"name":item._id})
+                    
+                });
+                max["id"] = ""
+                max["subvalues"] = values;
+                console.log(max)
+                res.json(max);
+            }
+        });
+});
 router.get('/reponse/:id', function(req, res) {
     console.log('Requesting a specific reponse');
     reponse.findById(req.params.id)
