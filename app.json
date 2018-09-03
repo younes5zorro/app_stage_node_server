@@ -1,0 +1,8 @@
+{
+  "name": "Robo Advisor_Back: Node.js",
+  "description": "A backend Node.js app using Express 4",
+  "repository": "https://github.com/younes5zorro/app_stage_node_server",
+  "logo": "https://cdn.rawgit.com/heroku/node-js-getting-started/master/public/node.svg",
+  "keywords": ["node", "express", "heroku"],
+  "image": "heroku/nodejs"
+}
