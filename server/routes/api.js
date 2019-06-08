@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose'); 
+const mongoose = require('mongoose');
 const reponse = require('../models/reponse');
 const row = require('../models/row');
 const rows2 = require('../models/row2');
@@ -57,9 +57,9 @@ router.get('/comp', function(req, res) {
                 console.log(err);
             } else {
                 result.forEach(function(item) {
-                    
+
                     values.push({"id":item._id,"value":item.value,"name":item._id})
-                    
+
                 });
                 max["id"] = ""
                 max["subvalues"] = values;
@@ -108,8 +108,8 @@ router.get('/py/:nb', function(req, res) {
 function base100(values) {
 
     values =  values.filter((value, index, array) => !array.filter((v, i) => JSON.stringify(value) == JSON.stringify(v) && i < index).length);
-    
-    base = [values[0][0],values[0][1],values[0][2],100,100] 
+
+    base = [values[0][0],values[0][1],values[0][2],100,100]
 
     result = [base]
     values.forEach((item, index) => {
@@ -120,13 +120,13 @@ function base100(values) {
     });
 
     return result
-    
+
 }
 
 router.get('/masi/:slug', function(req, res) {
     console.log('Requesting for dashboard');
     row.aggregate([
-             
+
         { $match:{'slug': req.params.slug}},
         { $lookup:{
             from: "masi",
@@ -151,7 +151,7 @@ router.get('/masi/:slug', function(req, res) {
                     if(item.masi_docs[0]){chartValues.push([phptime,item.dernierCours,item.masi_docs[0].valeur]) ;}
                     if (from === null || from > phptime) {from = phptime;}
                     if (to < phptime) {to = phptime +1}
-                    
+
                 });
 
                 chartValues = base100(chartValues);
@@ -161,7 +161,7 @@ router.get('/masi/:slug', function(req, res) {
                     'to' : to,
                     'unit' : 'd',
                     'values' : chartValues
-               
+
                     // 'values' : chartValues
                 };
 
@@ -180,7 +180,7 @@ router.get('/card/:slug', function(req, res) {
              row.find({'slug': req.params.slug}).sort({"cap": -1}).limit(1)
              .exec(function(err, row1) {
                              values.push({"cap":row1})
- 
+
                              row.find({'slug': req.params.slug}).sort({"dernierCours": -1}).limit(1)
                              .exec(function(err, row2) {
                                           values.push({"cour":row2},{"result":{'cap':(row0[0].cap*100)/row1[0].cap,'cour':(row0[0].dernierCours*100)/row2[0].dernierCours}})
@@ -192,7 +192,7 @@ router.get('/card/:slug', function(req, res) {
              }
          );
  });
- 
+
 
 
 router.get('/rows2/:slug', function(req, res) {
@@ -202,13 +202,13 @@ router.get('/rows2/:slug', function(req, res) {
             console.log(err);
         } else {
             res.json(row2);
-        }   
+        }
     });
  });
- 
+
 
 router.get('/test/:slug', function(req, res) {
-    row.aggregate([ 
+    row.aggregate([
         { $match:{'slug': req.params.slug}},
         { $lookup:{
             from: "masi",
@@ -221,11 +221,8 @@ router.get('/test/:slug', function(req, res) {
    .exec(function(err, row0) {
         res.json(row0);
      });
-                                 
+
 });
-
-
-
 
 router.post('/create', function(req, res) {
     console.log('Posting an Reponse');
@@ -251,23 +248,23 @@ router.post('/create', function(req, res) {
     var t = req.body.renseignement2.filter(function(o) { return o == true }).length;
     if (t<3) {
         t=2;
-    } else { 
+    } else {
         if (t>=3 && t<=5) {
             t=4;
-        } else { 
+        } else {
             if (t>=6 && t<=8) {
                 t=6;
-            } else { 
+            } else {
                 t=8;
             }
         }
     }
-    
+
     newReponse.renseignement22 = t;
     newReponse.renseignement3 = req.body.renseignement3;
     newReponse.minrendement = req.body.minrendement;
     newReponse.maxpert = req.body.maxpert;
-    
+
     newReponse.save(function(err, reponse) {
         if(err) {
             console.log('Error inserting the Reponse');
