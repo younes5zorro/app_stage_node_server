@@ -20,13 +20,11 @@ mongoose.connect(db, function(err) {
         console.log('Error connecting');
     }
 });
-
 router.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
   });
-
 router.get('/all', function(req, res) {
 
     reponse.find({})
@@ -39,7 +37,6 @@ router.get('/all', function(req, res) {
             }
         });
 });
-
 router.get('/actions', function(req, res) {
 
     // row.find({}, { designation: 1, slug: 1,_id:0 }).distinct('designation')
@@ -53,7 +50,6 @@ router.get('/actions', function(req, res) {
             }
         });
 });
-
 router.get('/comp', function(req, res) {
     const values = [];
     const max = {}
@@ -75,7 +71,6 @@ router.get('/comp', function(req, res) {
             }
         });
 });
-
 router.get('/reponse/:id', function(req, res) {
     console.log('Requesting a specific reponse');
     reponse.findById(req.params.id)
@@ -140,13 +135,11 @@ function base100(values) {
     });
 
     return result
-
 }
 
 router.get('/masi/:slug', function(req, res) {
     console.log('Requesting for dashboard');
     row.aggregate([
-
         { $match:{'slug': req.params.slug}},
         { $lookup:{
             from: "masi",
@@ -171,7 +164,6 @@ router.get('/masi/:slug', function(req, res) {
                     if(item.masi_docs[0]){chartValues.push([phptime,item.dernierCours,item.masi_docs[0].valeur]) ;}
                     if (from === null || from > phptime) {from = phptime;}
                     if (to < phptime) {to = phptime +1}
-
                 });
 
                 chartValues = base100(chartValues);
@@ -181,7 +173,6 @@ router.get('/masi/:slug', function(req, res) {
                     'to' : to,
                     'unit' : 'd',
                     'values' : chartValues
-
                     // 'values' : chartValues
                 };
 
@@ -199,7 +190,6 @@ router.get('/card/:slug', function(req, res) {
              row.find({'slug': req.params.slug}).sort({"cap": -1}).limit(1)
              .exec(function(err, row1) {
                              values.push({"cap":row1})
-
                              row.find({'slug': req.params.slug}).sort({"dernierCours": -1}).limit(1)
                              .exec(function(err, row2) {
                                           values.push({"cour":row2},{"result":{'cap':(row0[0].cap*100)/row1[0].cap,'cour':(row0[0].dernierCours*100)/row2[0].dernierCours}})
