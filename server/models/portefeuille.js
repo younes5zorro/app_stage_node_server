@@ -14,6 +14,7 @@ const reponseSchema = new Schema({
     Sens: Number,
     PlusValue: Number,
     Date: Date,
+    secteur: String,
 });
 
 module.exports = mongoose.model('portefeuille', reponseSchema);
