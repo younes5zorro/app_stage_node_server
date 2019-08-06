@@ -5,7 +5,7 @@ const reponse = require('../models/reponse');
 const row = require('../models/row');
 const rows2 = require('../models/row2');
 const tweet = require('../models/tweet');
-const PythonShell = require('python-shell');
+// const PythonShell = require('python-shell');
 
 const portefeuille  = require('../models/portefeuille');
 const profilestatique  = require('../models/profilestatique');
@@ -235,50 +235,52 @@ router.get('/profil/:slug', function(req, res) {
   const values = [];
   const max = {};
 
-  profilestatique.aggregate([{ $match: { 'ProfilStatique': req.params.slug } },{ $sample: { size: 1 } }])
-  // profilestatique.find({}).distinct("ProfilStatique")
-  // profilestatique.aggregate([
-  //     { $match:{'ProfilStatique': req.params.slug}},
-  //     { $lookup:{
-  //         from: "portefeuilles",
-  //         localField: "IdPersonne",
-  //         foreignField: "IdPersonne",
-  //         as: "portefeuille_docs"
-  //     }},
-  //     {
-  //        $match: { "portefeuille_docs": { $ne: [] } }
-  //     },
-  //     { $sample: { size: 1 } }
-  //     // { $sort:{'IdPersonne':1}},
-  //  ])
-    .exec(function(err, row0) {
-        if (err) {
-          res.json(err);
-          console.log('Error getting the Reponse::'+err);
-        } else {
-          personne = row0[0].IdPersonne;
-
-          portefeuille.aggregate([{ $match: { 'IdPersonne': personne } },
-          { $project: { Actif: 1, total: { $multiply: [ "$CMPANet", "$QteExecutee" ] } } },
-          {
-            $group:{
-                  _id: "$Actif",
-                  value: { $avg: "$total" }
-                }
-          },{$sort:{value:-1}}
-          ])
-          .exec(function(err, result) {
-              result.forEach(function(item) {
-
-                  values.push({"id":item._id,"value":item.value,"name":item._id})
-
-              });
-              max["id"] = ""
-              max["subvalues"] = values;
-              res.json(max);
-          });
+  portefeuille.aggregate([{ $match: { 'IdPersonne': parseInt(req.params.slug ) } },
+  { $project: { Actif: 1, total: { $multiply: [ "$CMPANet", "$QteExecutee" ] } } },
+  {
+    $group:{
+          _id: "$Actif",
+          value: { $avg: "$total" }
         }
-    });
+  },{$sort:{value:-1}}
+  ]).limit(8)
+  .exec(function(err, result) {
+      result.forEach(function(item) {
+
+          values.push({"id":item._id,"value":item.value,"name":item._id})
+
+      });
+      max["id"] = ""
+      max["subvalues"] = values;
+      res.json(max);
+  });
+
+});
+
+router.get('/secteur/:slug', function(req, res) {
+
+  const values = [];
+  const max = {};
+
+  portefeuille.aggregate([{ $match: { 'IdPersonne': parseInt(req.params.slug ) } },
+  { $project: { secteur: 1, total: { $multiply: [ "$CMPANet", "$QteExecutee" ] } } },
+  {
+    $group:{
+          _id: "$secteur",
+          value: { $avg: "$total" }
+        }
+  },{$sort:{value:-1}}
+  ]).limit(8)
+  .exec(function(err, result) {
+      result.forEach(function(item) {
+
+          values.push({"id":item._id,"value":item.value,"name":item._id})
+
+      });
+      max["id"] = ""
+      max["subvalues"] = values;
+      res.json(max);
+  });
 
 });
 
@@ -357,12 +359,15 @@ router.post('/create', function(req, res) {
     // newReponse.minrendement = req.body.minrendement;
     // newReponse.maxpert = req.body.maxpert;
 
-    newReponse.save(function(err, reponse) {
+    newReponse.save(function(err, rreponse) {
         if(err) {
             console.log('Error inserting the Reponse');
         } else {
+            profilestatique.aggregate([{ $match: { 'ProfilStatique': rreponse.profil } },{ $sample: { size: 1 } }]).exec(function(err, row0) {
+              rreponse.set('random',row0[0].IdPersonne,{strict:false});
+              res.json(rreponse);
 
-            res.json(reponse);
+            });
         }
     });
 });
@@ -379,6 +384,111 @@ router.post('/update', function(req, res) {
   });
   });
 
+ function  getRandomColor() {
+    var letters = '0123456789ABCDEF';
+    var color = '#';
+    for (var i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+  }
 
+router.get('/performance/:id', function(req, res) {
+    console.log('Requesting for performance');
+    portefeuille.find({'IdPersonne': req.params.id}).distinct('Actif')
+   .exec(function(err, l_actions) {
+            var l_actions = l_actions.slice(0, 8);
+            if (err) {
+                console.log(err);
+                // console.log('Error getting the rows');
+            } else {
+                portefeuille
+                // .find({ "Actif": { $in: ss } } )
+                .aggregate(
+                  [
+                    {$match:{ "Actif": { $in: l_actions} } },
+                    {
+                      $project: {
+                          Date:1,
+                          performance:1,
+                          Actif:1,
+                          // date: { $dateToString: { format: "%Y-%m-%d", date: "$Date" } },
+                      }
+                    },
+                    {
+                      $group : { _id : "$Date", results: { $push: "$$ROOT" } }
+                    }
+                  ]
+                  )
+                .sort({"_id":1})
+                // .limit(10)
+                .exec(function(err, items) {
+
+                    var from = null;
+                    var to = 0;
+                    var chartValues = [];
+
+                    items.forEach(function(item) {
+
+                        series = []
+
+                        var line = []
+                        var phptime= (new Date(item._id)).getTime();
+                        line.push(phptime)
+                        l_actions.forEach(function (action,index) {
+                            serie = {
+                              data: {
+                                index: index+1,
+                                aggregation: 'avg',
+                              },
+                              type: 'line',
+                              name: action,
+                              style: {
+                                  lineWidth: 3,
+                                  lineColor: getRandomColor(),
+                              }
+                            }
+
+                            series.push(serie)
+
+                            item.results.forEach(function (port) {
+                              if(port.Actif == action ){
+                                line[index+1] = port.performance
+                              }
+                              // else{line[index+1] = null}
+                            })
+
+                        });
+
+                        if (from === null || from > phptime) {from = phptime}
+                        if (to < phptime) {to = phptime +1}
+                        chartValues.push(line);
+                    });
+                    var chartResult = {
+                        'dataLimitFrom' : from,
+                        'dataLimitTo' : to,
+                        'unit' : 'd',
+                        'values' : chartValues
+                    };
+
+                    var result  = {
+                      'data' : chartResult,
+                      "serie":series
+                    }
+                    res.json(result);
+                    // res.json(items);
+
+                });
+
+            }
+        });
+});
+
+router.get('/useraction/:id', function(req, res) {
+  portefeuille.find({'IdPersonne': req.params.id}).distinct('Actif')
+  .exec(function(err, ss) {
+    res.json(ss);
+  });
+});
 
 module.exports = router;
